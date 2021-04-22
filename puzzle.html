@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <title></title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style type="text/css">
+    div{
+        margin-left: 10px;
+        padding: 2px;
+        position: relative;
+    }
+    </style>
+</head>
+
+<body id="body" onload="init();">
+    <canvas id="canvas"></canvas>
+    <script>
+        var counter = 0;
+        const PUZZLE_HOVER_TINT = '#009900';
+        var n = 8; /* PUZZLE_DIFFICULTY */
+
+        var _stage;
+        var _canvas;
+
+        var _img;
+        var _pieces;
+
+        var pieces1;
+        var pieces2;
+        var pieces3;
+        var pieces4;
+        var pieces1Pos;
+        var pieces2Pos;
+        var pieces3Pos;
+        var pieces4Pos;
+
+        var _puzzleWidth;
+        var _puzzleHeight;
+        var w; /* _pieceWidth */
+        var h; /* _pieceHeight */
+        var _currentPiece;
+        var _currentDropPiece;
+
+        var _mouse;
+
+        function init(){
+            _img = new Image();
+            _img.addEventListener('load',onImage,false);
+            _img.src = "{% static "images/mke.jpg" %}";
+        }
+        function onImage(){
+            counter += 2;
+            w = Math.floor(_img.width / n)
+            h = Math.floor(_img.height / n)
+            _puzzleWidth = w * n;
+            _puzzleHeight = h * n;
+            setCanvas();
+            initPuzzle();
+            if (counter > 2) {
+                blockCreate(counter);
+            }
+        }
+        function setCanvas(){
+            _canvas = document.getElementById('canvas');
+            _stage = _canvas.getContext('2d');
+            _canvas.width = _puzzleWidth;
+            _canvas.height = _puzzleHeight;
+            _canvas.style.border = "1px solid black";
+        }
+        function initPuzzle(){
+            _pieces = [];
+            pieces1 = [];
+            pieces2 = [];
+            pieces3 = [];
+            pieces4 = [];
+            pieces1Pos = [];
+            pieces2Pos = [];
+            pieces3Pos = [];
+            pieces4Pos = [];
+            _mouse = {x:0,y:0};
+            _currentPiece = null;
+            _currentDropPiece = null;
+            _stage.drawImage(_img, 0, 0, _puzzleWidth, _puzzleHeight, 0, 0, _puzzleWidth, _puzzleHeight);
+            createTitle("Click to Start Puzzle");
+            buildPieces();
+        }
+        function createTitle(msg){
+            _stage.fillStyle = "#000000";
+            _stage.globalAlpha = .4;
+            _stage.fillRect(100,_puzzleHeight - 40,_puzzleWidth - 200,40);
+            _stage.fillStyle = "#FFFFFF";
+            _stage.globalAlpha = 1;
+            _stage.textAlign = "center";
+            _stage.textBaseline = "middle";
+            _stage.font = "20px Arial";
+            _stage.fillText(msg,_puzzleWidth / 2,_puzzleHeight - 20);
+        }
+        function buildPieces(){
+            var i;
+            var piece;
+            var xPos = 0;
+            var yPos = 0;
+            for(i = 1;i <= n*n;i++){
+                piece = {};
+                piece.sx = xPos;
+                piece.sy = yPos;
+                /*piece.row = (i-(i%n)) / n + 1;
+                piece.col = i%n;*/
+                _pieces.push(piece);
+                xPos += w;
+                if(xPos >= _puzzleWidth){
+                    xPos = 0;
+                    yPos += h;
+                }
+            }
+            document.onmousedown = shufflePuzzle;
+        }
+        function shufflePuzzle(){
+            /*_pieces = shuffleArray(_pieces);*/
+            pieces1 = [_pieces[(n*n-n)/2-1], _pieces[(n*n-n)/2], _pieces[(n*n+n)/2-1], _pieces[(n*n+n)/2]];
+            if (counter == 2) {
+                pieces1 = shuffleArray(pieces1);
+            }
+            pieces1Pos = [(n/2-1)*w, (n/2-1)*h, (n/2)*w, (n/2-1)*h, (n/2-1)*w, n/2*h, n/2*w, n/2*h];
+            /*pieces2 = [_pieces[(n*n-3n)/2-2], _pieces[(n*n-3n)/2-1], _pieces[(n*n-3n)/2], _pieces[(n*n-3n)/2+1], _pieces[(n*n-n)/2-2], _pieces[(n*n-n)/2+1], _pieces[(n*n+n)/2-2], _pieces[(n*n+n)/2+1], _pieces[(n*n+3n)/2-2], _pieces[(n*n+3n)/2-1], _pieces[(n*n+3n)/2], _pieces[(n*n+3n)/2+1]];
+            pieces2 = shuffleArray(pieces2);
+            pieces2Pos = [(n/2-2)*w, (n/2-2)*h, (n/2-1)*w, (n/2-2)*h, n/2*w, (n/2-2)*h, (n/2+1)*w, (n/2-2)*h, (n/2-2)*w, (n/2-1)*h, (n/2+1)*w, (n/2-1)*h, (n/2-2)*w, n/2*h, (n/2+1)*w, n/2*h, (n/2-2)*w, (n/2+1)*h, (n/2-1)*w, (n/2+1)*h, n/2*w, (n/2+1)*h, (n/2+1)*w, (n/2+1)*h]; */
+            pieces2 = [_pieces[18], _pieces[19], _pieces[20], _pieces[21], _pieces[26], _pieces[29], _pieces[34], _pieces[37], _pieces[42], _pieces[43], _pieces[44], _pieces[45]];
+            if (counter == 4) {
+                pieces2 = shuffleArray(pieces2);
+            }
+            pieces2Pos = [2*w, 2*h, 3*w, 2*h, 4*w, 2*h, 5*w, 2*h, 2*w, 3*h, 5*w, 3*h, 2*w, 4*h, 5*w, 4*h, 2*w, 5*h, 3*w, 5*h, 4*w, 5*h, 5*w, 5*h];
+            pieces3 = [_pieces[9], _pieces[10], _pieces[11], _pieces[12], _pieces[13], _pieces[14], _pieces[17], _pieces[22], _pieces[25], _pieces[30], _pieces[33], _pieces[38], _pieces[41], _pieces[46], _pieces[49], _pieces[50], _pieces[51], _pieces[52], _pieces[53], _pieces[54]];
+            if (counter == 6) {
+                pieces3 = shuffleArray(pieces3);
+            }
+            pieces3Pos = [w, h, 2*w, h, 3*w, h, 4*w, h, 5*w, h, 6*w, h, w, 2*h, 6*w, 2*h, w, 3*h, 6*w, 3*h, w, 4*h, 6*w, 4*h, w, 5*h, 6*w, 5*h, w, 6*h, 2*w, 6*h, 3*w, 6*h, 4*w, 6*h, 5*w, 6*h, 6*w, 6*h];
+            pieces4 = [_pieces[0], _pieces[1], _pieces[2], _pieces[3], _pieces[4], _pieces[5], _pieces[6], _pieces[7], _pieces[8], _pieces[15], _pieces[16], _pieces[23], _pieces[24], _pieces[31], _pieces[32], _pieces[39], _pieces[40], _pieces[47], _pieces[48], _pieces[55], _pieces[56], _pieces[57], _pieces[58], _pieces[59], _pieces[60], _pieces[61], _pieces[62], _pieces[63]];
+            if (counter == 8) {
+                pieces4 = shuffleArray(pieces4);
+            }
+            pieces4Pos = [0, 0, w, 0, 2*w, 0, 3*w, 0, 4*w, 0, 5*w, 0, 6*w, 0, 7*w, 0, 0, h, 7*w, h, 0, 2*h, 7*w, 2*h, 0, 3*h, 7*w, 3*h, 0, 4*h, 7*w, 4*h, 0, 5*h, 7*w, 5*h, 0, 6*h, 7*w, 6*h, 0, 7*h, w, 7*h, 2*w, 7*h, 3*w, 7*h, 4*w, 7*h, 5*w, 7*h, 6*w, 7*h, 7*w, 7*h];
+            _stage.clearRect(0,0,_puzzleWidth,_puzzleHeight);
+            for (i = 0; i < pieces1.length; i++) {
+                piece = pieces1[i];
+                xPos = pieces1Pos[2*i];
+                yPos = pieces1Pos[2*i+1];
+                piece.xPos = xPos;
+                piece.yPos = yPos;
+                if (counter >= 2) {
+                    _stage.drawImage(_img, piece.sx, piece.sy, w, h, xPos, yPos, w, h);
+                    _stage.strokeRect(xPos, yPos, w,h);
+                }
+            }
+            for (i = 0; i < pieces2.length; i++) {
+                piece = pieces2[i];
+                xPos = pieces2Pos[2*i];
+                yPos = pieces2Pos[2*i+1];
+                piece.xPos = xPos;
+                piece.yPos = yPos;
+                if (counter >= 4) {
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, xPos, yPos, w, h);
+                _stage.strokeRect(xPos, yPos, w,h);
+                }
+            }
+            for (i = 0; i < pieces3.length; i++) {
+                piece = pieces3[i];
+                xPos = pieces3Pos[2*i];
+                yPos = pieces3Pos[2*i+1];
+                piece.xPos = xPos;
+                piece.yPos = yPos;
+                if (counter >= 6) {
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, xPos, yPos, w, h);
+                _stage.strokeRect(xPos, yPos, w,h);
+                }
+            }
+            for (i = 0; i < pieces4.length; i++) {
+                piece = pieces4[i];
+                xPos = pieces4Pos[2*i];
+                yPos = pieces4Pos[2*i+1];
+                piece.xPos = xPos;
+                piece.yPos = yPos;
+                if (counter >= 8) {
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, xPos, yPos, w, h);
+                _stage.strokeRect(xPos, yPos, w,h);
+                }
+            }
+            /*for(i = 0;i < _pieces.length;i++){
+                piece = _pieces[i];
+                piece.xPos = xPos;
+                piece.yPos = yPos;
+                _stage.drawImage(_img, piece.sx, piece.sy, _pieceWidth, _pieceHeight, xPos, yPos, _pieceWidth, _pieceHeight);
+                _stage.strokeRect(xPos, yPos, _pieceWidth,_pieceHeight);
+                xPos += _pieceWidth;
+                if(xPos >= _puzzleWidth){
+                    xPos = 0;
+                    yPos += _pieceHeight;
+                }
+            }*/
+            document.onmousedown = onPuzzleClick;
+        }
+        function onPuzzleClick(e){
+            if(e.layerX || e.layerX == 0){
+                _mouse.x = e.layerX - _canvas.offsetLeft;
+                _mouse.y = e.layerY - _canvas.offsetTop;
+            }
+            else if(e.offsetX || e.offsetX == 0){
+                _mouse.x = e.offsetX - _canvas.offsetLeft;
+                _mouse.y = e.offsetY - _canvas.offsetTop;
+            }
+            _currentPiece = checkPieceClicked();
+            if(_currentPiece != null){
+                _stage.clearRect(_currentPiece.xPos,_currentPiece.yPos,w,h);
+                _stage.save();
+                _stage.globalAlpha = .9;
+                _stage.drawImage(_img, _currentPiece.sx, _currentPiece.sy, w, h, _mouse.x - (w / 2), _mouse.y - (h / 2), w, h);
+                _stage.restore();
+                document.onmousemove = updatePuzzle;
+                document.onmouseup = pieceDropped;
+            }
+        }
+        function checkPieceClicked(){
+            var i;
+            var piece;
+            for(i = 0;i < _pieces.length;i++){
+                piece = _pieces[i];
+                if(_mouse.x < piece.xPos || _mouse.x > (piece.xPos + w) || _mouse.y < piece.yPos || _mouse.y > (piece.yPos + h)){
+                    //PIECE NOT HIT
+                }
+                else{
+                    return piece;
+                }
+            }
+            return null;
+        }
+        function updatePuzzle(e){
+            _currentDropPiece = null;
+            if(e.layerX || e.layerX == 0){
+                _mouse.x = e.layerX - _canvas.offsetLeft;
+                _mouse.y = e.layerY - _canvas.offsetTop;
+            }
+            else if(e.offsetX || e.offsetX == 0){
+                _mouse.x = e.offsetX - _canvas.offsetLeft;
+                _mouse.y = e.offsetY - _canvas.offsetTop;
+            }
+            _stage.clearRect(0,0,_puzzleWidth,_puzzleHeight);
+            var i;
+            var piece;
+            for(i = 0;i < _pieces.length;i++){
+                piece = _pieces[i];
+                if(piece == _currentPiece){
+                    continue;
+                }
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+                if(_currentDropPiece == null){
+                    if(_mouse.x < piece.xPos || _mouse.x > (piece.xPos + w) || _mouse.y < piece.yPos || _mouse.y > (piece.yPos + h)){
+                        //NOT OVER
+                    }
+                    else{
+                        _currentDropPiece = piece;
+                        _stage.save();
+                        _stage.globalAlpha = .4;
+                        _stage.fillStyle = PUZZLE_HOVER_TINT;
+                        _stage.fillRect(_currentDropPiece.xPos,_currentDropPiece.yPos,w, h);
+                        _stage.restore();
+                    }
+                }
+            }
+
+            _stage.save();
+            _stage.globalAlpha = .6;
+            _stage.drawImage(_img, _currentPiece.sx, _currentPiece.sy, w, h, _mouse.x - (w / 2), _mouse.y - (h / 2), w, h);
+            _stage.restore();
+            _stage.strokeRect( _mouse.x - (w / 2), _mouse.y - (h / 2), w,h);
+        }
+        function pieceDropped(e){
+            document.onmousemove = null;
+            document.onmouseup = null;
+            if(_currentDropPiece != null){
+                var tmp = {xPos:_currentPiece.xPos,yPos:_currentPiece.yPos};
+                _currentPiece.xPos = _currentDropPiece.xPos;
+                _currentPiece.yPos = _currentDropPiece.yPos;
+                _currentDropPiece.xPos = tmp.xPos;
+                _currentDropPiece.yPos = tmp.yPos;
+            }
+            resetPuzzleAndCheckWin();
+        }
+        function resetPuzzleAndCheckWin(){
+            _stage.clearRect(0,0,_puzzleWidth,_puzzleHeight);
+            var gameWin = true;
+            var i;
+            var piece;
+            /*for(i = 0;i < _pieces.length;i++){
+                piece = _pieces[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+                if(piece.xPos != piece.sx || piece.yPos != piece.sy){
+                    gameWin = false;
+                }
+            }*/
+        if (counter == 2) {
+            for(i = 0;i < pieces1.length;i++){
+                piece = pieces1[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+                if(piece.xPos != piece.sx || piece.yPos != piece.sy){
+                    gameWin = false;
+                }
+            }
+        }
+        if (counter == 4) {
+            for(i = 0;i < pieces1.length;i++){
+                piece = pieces1[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+            }
+            for(i = 0;i < pieces2.length;i++){
+                piece = pieces2[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+                if(piece.xPos != piece.sx || piece.yPos != piece.sy){
+                    gameWin = false;
+                }
+            }
+        }
+        if (counter == 6) {
+            for(i = 0;i < pieces1.length;i++){
+                piece = pieces1[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+            }
+            for(i = 0;i < pieces2.length;i++){
+                piece = pieces2[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+            }
+            for(i = 0;i < pieces3.length;i++){
+                piece = pieces3[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+                if(piece.xPos != piece.sx || piece.yPos != piece.sy){
+                    gameWin = false;
+                }
+            }
+        }
+        if (counter == 8) {
+            for(i = 0;i < pieces1.length;i++){
+                piece = pieces1[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+            }
+            for(i = 0;i < pieces2.length;i++){
+                piece = pieces1[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+            }
+            for(i = 0;i < pieces3.length;i++){
+                piece = pieces1[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+            }
+            for(i = 0;i < pieces4.length;i++){
+                piece = pieces4[i];
+                _stage.drawImage(_img, piece.sx, piece.sy, w, h, piece.xPos, piece.yPos, w, h);
+                _stage.strokeRect(piece.xPos, piece.yPos, w,h);
+                if(piece.xPos != piece.sx || piece.yPos != piece.sy){
+                    gameWin = false;
+                }
+            }
+        }
+            if(gameWin){
+                setTimeout(gameOver,500);
+                console.log("I won!", counter)
+            }
+        }
+        function gameOver(){
+            document.onmousedown = null;
+            document.onmousemove = null;
+            document.onmouseup = null;
+            onImage();
+        }
+        function shuffleArray(o){
+            for(var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+            return o;
+        }
+        function blockCreate(i) {
+            var div = document.createElement('div');
+            div.style.backgroundColor = 'lightblue';
+            div.className = 'block';
+            div.innerHTML = "Block"+(i-2)/2;
+            div.style.width = 20*(i-1) + "px";
+            div.style.height = 20*(i-1) + "px";
+            document.getElementById('body').appendChild(div);
+          }
+
+
+    </script>
+    <!-- <p>Blockchain</p> -->
+</body>
+
+</html>
